@@ -19,7 +19,7 @@ contract Bidding {
   event HighBidChanged(address addr, string nm, uint newHighBid);
   event BidFailed(string nm, uint newHighBid);
   address[] temp;
-  address[] highBidderAddresses = [address(this)];
+  address[] highBidderAddresses;
   HighBidder highBidder;
   mapping(address => HighBidder) highBidders;
  
@@ -37,7 +37,8 @@ contract Bidding {
     description = desc;
     duration = now + dura;
     startPrice = sp;
-    highBidder = HighBidder(address(this), "contract", sp);
+    highBidder = HighBidder(msg.sender, "contract", sp);
+    highBidderAddresses = [msg.sender];
   }
 
   function placeBid(string bidder) payable {
@@ -62,25 +63,25 @@ contract Bidding {
 
     for ( uint i = 0; i < highBidderAddresses.length; i++) {
        // check to see if this person has previously sent ethers to the contract
-        if (msg.sender == highBidderAddresses[i] && highBidderAddresses[i] != highBidder.addr) {
+        if ((msg.sender == highBidderAddresses[i]) && (highBidderAddresses[i] != highBidder.addr) {
              hasEthers = true;
         } else {
            temp.push(highBidderAddresses[i]);
         }
+    }
 
-        highBidderAddresses.length = 0;
-        swap = temp;
-        highBidderAddresses = temp;
-        temp = highBidderAddresses;
-
-        if (hasEthers) {
-            hb = highBidders[msg.sender];
-            highBidders[msg.sender] = HighBidder(0x0, "", 0);
-            msg.sender.transfer(hb.bid);
-        } else {
-            revert();
-        }    
-  }
+    highBidderAddresses.length = 0;
+    swap = temp;
+    highBidderAddresses = temp;
+    temp = highBidderAddresses;
+    
+    if (hasEthers) {
+        hb = highBidders[msg.sender];
+        msg.sender.transfer(hb.bid);
+        delete(highBidders[msg.sender]);
+    } else {
+        revert();
+    }    
 }
 
 function getHighBid() returns (uint) {
